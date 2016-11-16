@@ -1,2 +1,2 @@
 # RIPL
-Really Imperative Programming Langauge
+Really Imperative Programming Language
