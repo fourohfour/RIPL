@@ -1,0 +1,11 @@
+sum ! `0`
+c   ! `1`
+
+with:
+    less ! (&c <= `100`)
+loop &less:
+    sum  ! &sum + &c
+    c    ! &c   + `1`
+
+@output &c
+
