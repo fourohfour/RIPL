@@ -15,3 +15,8 @@ def warning(stage, message):
 
 def error(stage, message):
     logger.error("[{0}] Error: {1}".format(stage, message))
+
+
+class Abort(Exception):
+    def __init__(self):
+        raw_info("Aborting...")
