@@ -8,13 +8,8 @@ Here are detailed some of the key concepts in RIPL.
 
 A point is a named, abstract representation of a memory location. Points can be bound to data as shown below:
 
-    // Set the point 'x' to the literal integer 42
-    
-    x ! `42`
-
-    // Set the point 'z' to the literal integer 0
-
-    z !
+    x ! `42`     // Set the point 'x' to the literal integer 42
+    z !          // Set the point 'z' to the literal integer 0
 
 Points are global in scope. Points have fixed length and generally implementations will fix the location of points in memory at compile time.
 
@@ -47,19 +42,12 @@ Relational expressions can be evaluated at runtime to act as conditionals. They 
 
     x ! `100`
 
-    (x <  150)   // Evaluates to true
-    (x >  150)   // Evaluates to false
-    (x =  100)   // Evaluates to true
-    (x <= 100)   // Evaluates to true
-    (x >= 99 )   // Evaluates to false
-
-Logical NOT can also be achieved with a tilde, as shown below.
-
-    x ! `100`
-
-    (~(x = 100))    // Evaluates to false
-
-
+    (x <  150)   // Less than                 - Evaluates to true
+    (x >  150)   // Greater than              - Evaluates to false
+    (x =  100)   // Equal to                  - Evaluates to true
+    (x ~= 100)   // Not Equal to              - Evaluates to false
+    (x <= 100)   // Less than or Equal to     - Evaluates to true
+    (x >= 99 )   // Greater than or Equal to  - Evaluates to false
 
 **Arithmatic and Point Retrieval**
 
