@@ -8,21 +8,19 @@ Here are detailed some of the key concepts in RIPL.
 
 A point is a named, abstract representation of a memory location. Points can be bound to data as shown below:
 
-    x ! `42`     // Set the point 'x' to the literal integer 42
+    x ! 42       // Set the point 'x' to the literal integer 42
     z !          // Set the point 'z' to the literal integer 0
 
 Points are global in scope. Points have fixed length and generally implementations will fix the location of points in memory at compile time.
 
 The exclamation point is used to set data into a point. The choice to not use a standard assignment operator (i.e. '=') is a deliberate one to discourage programmers from treating points like variables in other languages. Although they act like variables they are better thought of as similar to pointers.
 
-The exclamation point can be followed by data, or alternatively nothing at all. Setting nothing to a point is equivalent to setting it to the integer literal \`0`.
-
-Backticks are used to represent literal integers in code.
+The exclamation point can be followed by data, or alternatively nothing at all. Setting nothing to a point is equivalent to setting it to the integer literal `0`.
 
 Other data can also be represented literally.
 The following are acceptable data literals:
 
-    `19`         // Literal integer 19
+    19           // Literal integer 19
     {1, 2, 3}    // Literal structure containing the integers 1, 2, and 3
     
     'J'          // Literal character 'J'
@@ -40,7 +38,7 @@ Integer values can be coerced to booleans but this is undefined behaviour and ma
 
 Relational expressions can be evaluated at runtime to act as conditionals. They work as you would expect. Convention states that they should be enclosed in parentheses to indicate how they should be evaluated.
 
-    x ! `100`
+    x ! 100
 
     (x <  150)   // Less than                 - Evaluates to true
     (x >  150)   // Greater than              - Evaluates to false
@@ -60,10 +58,10 @@ When working with points, it must be remembered that after transpilation a point
 
 Some examples of arithmatic and point retrieval are given below:
 
-    x      ! `2` + `6`   // Set point x to 8 using addition
-    y      ! `2` * `2`   // Set point y to 4 using multiplication
+    x      !  2  +  6    // Set point x to 8 using addition
+    y      !  2  *  2    // Set point y to 4 using multiplication
     z      ! &x  - &y    // Set point z to 4 using subtraction of other points
-    result ! &z  / `2`   // Set point result to 2 using floor division
+    result ! &z  /  2    // Set point result to 2 using floor division
 
 
 **Procedures**
@@ -76,7 +74,7 @@ Some example procedures are given below. These are not guarunteed to be implemen
 
     c ! @input   // Set point c to a character from stdin
 
-    @output `22`  // Output the integer 22 to stdout
+    @output  22  // Output the integer 22 to stdout
 
     @exit &e     // Exit with the exit code given at the point 'e'
 
