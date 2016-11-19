@@ -7,5 +7,5 @@ loop &less:
     sum  ! &sum + &c
     c    ! &c   + 1
 
-@output\&c
+@output &c
 
