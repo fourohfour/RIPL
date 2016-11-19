@@ -11,7 +11,7 @@ class Unit:
         self.unit_name       = unit_name
         self.pipeline_input  = pipeline_input
 
-        self.token_repr      = None
+        self.tokenised_repr  = None
         self.abstract_repr   = None
 
 
@@ -23,5 +23,5 @@ class Pipeline:
         self.unit = Unit(unit_name, pipeline_input)
 
     def begin(self):
-        pass
+        self.tokenised_repr = tokeniser.Tokeniser(self.unit).generate()
 
