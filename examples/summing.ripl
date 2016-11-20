@@ -1,5 +1,6 @@
 sum ! 0
 c   ! 1
+q   ! "qwerty{}&"
 
 with:
     less ! (&c <= 100)

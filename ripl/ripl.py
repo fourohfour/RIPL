@@ -25,7 +25,7 @@ class SourceFile:
             yield line
 
     def get_line(self, number):
-        return next(filter(self.lines, lambda l: l.row_number == number), False)
+        return next(filter(lambda l: l.row_number == number, self.lines), False)
 
 class Command:
     def __init__(self, args, flags):
@@ -50,7 +50,7 @@ def initialise():
 
         try:
             with open(source_path) as sourcef:
-                lines = list(line.strip() for line in sourcef)
+                lines = list(line.strip("\n") for line in sourcef)
                 return SourceFile(source_path, lines, command.flags)
 
         except FileNotFoundError:
