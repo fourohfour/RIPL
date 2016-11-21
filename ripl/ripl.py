@@ -14,7 +14,7 @@ class SourceFile:
         self.file_name = file_name
 
         self.lines = []
-        for row_number, line in enumerate(raw_lines):
+        for row_number, line in enumerate(raw_lines, start = 1):
             self.lines.append(SourceLine(row_number, line))
 
         self.verbose = "v" in raw_flags
@@ -26,6 +26,22 @@ class SourceFile:
 
     def get_line(self, number):
         return next(filter(lambda l: l.row_number == number, self.lines), False)
+
+    def get_traceback(self, row_number, col_number):
+        lines = []
+        lines.append("At line {0}, column {1} in file \"{2}\"".format(row_number, col_number, self.file_name))
+        lines.append(self.get_line(row_number).line)
+        lines.append(" " * col_number + "^")
+        return lines
+
+    def log_error(self, stage, row_number, col_number, message):
+        output.error(stage, message)
+        output.raw_info("\n".join(self.get_traceback(row_number, col_number)))
+        raise output.Abort()
+
+    def log_warning(self, stage, row_number, col_number, message):
+        output.warning(stage, message)
+        output.raw_info("\n".join(self.get_traceback(row_number, col_number)))
 
 class Command:
     def __init__(self, args, flags):

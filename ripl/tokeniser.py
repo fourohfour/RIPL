@@ -188,7 +188,8 @@ class Tokeniser():
                     indent_levels.pop()
 
                 if not space_count == indent_levels[-1]:
-                    pass # TODO: SYNTAX Error - Bad Dedent
+                    self.unit.pipeline_input.log_error("Tokeniser", line[0].row_number, space_count,
+                                                       "Bad Dedent - does not match any outer indentation level.")
 
             for index, token in enumerate(line):
                 if index in indent_levels[1:]:
@@ -226,10 +227,13 @@ class Tokeniser():
                         for strindex, strchar in enumerate(tokens[index + 1:], start = 1):
                             if not breaks_name(strchar):
                                 string += strchar.char
+
                             elif type(strchar) is not ProtoToken:
-                                pass # TODO - Syntax Error: Invalid String Terminator
+                                self.unit.pipeline_input.log_error("Tokeniser", strchar.row_number, strchar.col_number,
+                                                                   "Unterminated String")
                             elif not strchar.char == "\"":
-                                pass # TODO - Syntax Error: Inalid String Terminator
+                                self.unit.pipeline_input.log_error("Tokeniser", strchar.row_number, strchar.col_number,
+                                                                   "Bad String Terminator")
                             else:
                                 skip_to = index + strindex + 1
                                 break
@@ -241,9 +245,12 @@ class Tokeniser():
                             if not breaks_name(charchar):
                                 char += charchar.char
                             elif type(charchar) is not ProtoToken:
-                                pass # TODO - Syntax Error: Invalid Char Terminator
+                                self.unit.pipeline_input.log_error("Tokeniser", charchar.row_number, charchar.col_number,
+                                                                   "Unterminated Character")
                             elif not charchar.char == "'":
-                                pass # TODO - Syntax Error: Inalid Char Terminator
+                                self.unit.pipeline_input.log_error("Tokeniser", charchar.row_number, charchar.col_number,
+                                                                   "Bad Character Terminator")
+
                             else:
                                 skip_to = index + charindex + 1
                                 break
