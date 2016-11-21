@@ -246,7 +246,7 @@ class Tokeniser():
                                 char += charchar.char
                             elif type(charchar) is not ProtoToken:
                                 pass # TODO - Syntax Error: Invalid Char Terminator
-                            elif not strchar.char == "'":
+                            elif not charchar.char == "'":
                                 pass # TODO - Syntax Error: Inalid Char Terminator
                             else:
                                 skip_to = index + charindex + 1
