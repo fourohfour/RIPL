@@ -1,7 +1,9 @@
 from enum import Enum
 
 class TokenType(Enum):
-    NAME = 0
+    PROTO = -1
+
+    NAME  = 0
 
     STRING   = 10
     INTEGER  = 11
@@ -43,6 +45,8 @@ class ProtoToken:
         self.col_number  = col_number
         self.force_plain = force_plain
 
+        self.token_type  = TokenType.PROTO
+
 class Token():
     def __init__(self, token_type, row_number, col_number, value=""):
         self.token_type = token_type
@@ -50,6 +54,8 @@ class Token():
         self.col_number = col_number
         self.value      = value
         self.indent     = 0
+
+        self.char       = ""
 
 class TokenisedRepresentation():
     def __init__(self):
@@ -153,11 +159,10 @@ class Tokeniser():
         lines = []
         line  = []
         for token in self.tokenised_repr:
-            if type(token) is Token:
-                if token.token_type is TokenType.RETURN:
-                    if line:
-                        lines.append(line)
-                    line = []
+            if token.token_type is TokenType.RETURN:
+                if line:
+                    lines.append(line)
+                line = []
             line.append(token)
         lines.append(line)
 
@@ -190,15 +195,6 @@ class Tokeniser():
                     line[index] = Token(TokenType.INDENT, token.row_number, token.col_number)
 
         tokens = [token for line in lines for token in line]
-
-        proto_chains = []
-        proto_chain  = []
-        for t in tokens:
-            if type(t) is ProtoToken:
-                proto_chain.append(t)
-            else:
-                if proto_chain:
-                    proto_chains.append(proto_chain)
 
         def breaks_name(token):
             if type(token) is Token:
@@ -254,13 +250,33 @@ class Tokeniser():
                         bundled_chain.append(Token(TokenType.CHAR, token.row_number, token.col_number, value = char))
 
                     elif token.char == ">":
-                        pass # get name
+                        next_char = tokens[index + 1]
+
+                        if next_char.char == "=":
+                            bundled_chain.append(Token(TokenType.GREATER_OR_EQUAL, token.row_number, token.col_number))
+                            skip_to = index + 2
+                        else:
+                            bundled_chain.append(Token(TokenType.GREATER, token.row_number, token.col_number))
+
                     elif token.char == "<":
-                        pass # get name
+                        next_char = tokens[index + 1]
+
+                        if next_char.char == "=":
+                            bundled_chain.append(Token(TokenType.LESS_OR_EQUAL, token.row_number, token.col_number))
+                            skip_to = index + 2
+                        else:
+                            bundled_chain.append(Token(TokenType.LESS, token.row_number, token.col_number))
+
                     elif token.char == "=":
-                        pass # get name
+                        bundled_chain.append(Token(TokenType.EQUAL, token.row_number, token.col_number))
+
                     elif token.char == "~":
-                        pass # get name
+                        next_char = tokens[index + 1]
+
+                        if next_char.char == "=":
+                            bundled_chain.append(Token(TokenType.NOT_EQUAL, token.row_number, token.col_number))
+                            skip_to = index + 2
+
             else:
                 name = ""
                 for nameindex, namechar in enumerate(tokens[index:]):
