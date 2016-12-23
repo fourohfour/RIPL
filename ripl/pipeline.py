@@ -23,5 +23,5 @@ class Pipeline:
         self.unit = Unit(unit_name, pipeline_input)
 
     def begin(self):
-        self.tokenised_repr = tokeniser.Tokeniser(self.unit).generate()
-
+        tokeniser .Tokeniser(self.unit) .generate()
+        parser    .Parser(self.unit)    .generate()

@@ -13,8 +13,10 @@ class TokenType(Enum):
     RBRACE   = 14
     COMMA    = 15
 
-    TRUE     = 16
-    FALSE    = 17
+    DOT      = 16
+
+    TRUE     = 17
+    FALSE    = 18
 
     AMPER    = 20
     AT       = 21
@@ -144,6 +146,8 @@ class Tokeniser():
                     token = Token(TokenType.LPAREN, row_number, col_number)
                 elif char == ")":
                     token = Token(TokenType.RPAREN, row_number, col_number)
+                elif char == ".":
+                    token = Token(TokenType.DOT, row_number, col_number)
 
             # Regardless of force_plain, if we haven't got a token yet we want to create a Proto
             if token is  None:
@@ -294,6 +298,10 @@ class Tokeniser():
                         break
                 if all([n in list("0123456789") for n in list(name)]):
                     bundled_chain.append(Token(TokenType.INTEGER, token.row_number, token.col_number, value = int(name)))
+                elif name.lower() == "true":
+                    bundled_chain.append(Token(TokenType.TRUE, token.row_number, token.col_number))
+                elif name.lower() == "false":
+                    bundled_chain.append(Token(TokenType.FALSE, token.row_number, token.col_number))
                 else:
                     bundled_chain.append(Token(TokenType.NAME, token.row_number, token.col_number, value = name))
 
@@ -318,8 +326,6 @@ class Tokeniser():
         # Now we take the ProtoTokens and create the more complex ones.
         self.bundle_tokens()
 
-        for token in self.tokenised_repr:
-            print(token.token_type, ": ", token.value)
-
+        self.unit.tokenised_repr = self.tokenised_repr
 
 
