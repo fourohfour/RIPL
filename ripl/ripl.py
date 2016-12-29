@@ -19,6 +19,8 @@ class SourceFile:
 
         self.verbose = "v" in raw_flags
 
+        self.flags = raw_flags
+
 
     def __iter__(self):
         for line in self.lines:

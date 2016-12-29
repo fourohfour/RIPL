@@ -1,5 +1,7 @@
 from enum import Enum
 
+import output
+
 class TokenType(Enum):
     PROTO = -1
 
@@ -49,15 +51,24 @@ class ProtoToken:
 
         self.token_type  = TokenType.PROTO
 
-class Token():
+class Token:
     def __init__(self, token_type, row_number, col_number, value=""):
         self.token_type = token_type
         self.row_number = row_number
         self.col_number = col_number
         self.value      = value
-        self.indent     = 0
 
         self.char       = ""
+
+    def __str__(self):
+        return ("{name:<10}" + (" with value {value:<10}" if self.value else " " * 22) + "at {row}, {col}").format(
+               name  = self.token_type.name,
+               value = self.value,
+               row   = self.row_number,
+               col   = self.col_number
+               )
+
+
 
 class TokenisedRepresentation():
     def __init__(self):
@@ -181,8 +192,7 @@ class Tokeniser():
                     else:
                         break
                 else:
-                    if token.token_type is not TokenType.RETURN:
-                        break
+                    pass
 
             if space_count > indent_levels[-1]:
                 indent_levels.append(space_count)
@@ -327,5 +337,9 @@ class Tokeniser():
         self.bundle_tokens()
 
         self.unit.tokenised_repr = self.tokenised_repr
+
+        if self.unit.pipeline_input.verbose:
+            for token in self.unit.tokenised_repr:
+                output.info("Tokeniser", str(token))
 
 
