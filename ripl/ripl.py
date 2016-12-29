@@ -33,7 +33,7 @@ class SourceFile:
         lines = []
         lines.append("At line {0}, column {1} in file \"{2}\"".format(row_number, col_number, self.file_name))
         lines.append(self.get_line(row_number).line)
-        lines.append(" " * col_number + "^")
+        lines.append(" " * (col_number - 1) + "^")
         return lines
 
     def log_error(self, stage, row_number, col_number, message):

@@ -2,6 +2,8 @@ from tokeniser import TokenType
 from collections import deque
 from enum import Enum
 import output
+import names
+import random
 
 class Priority:
     def __init__(self, lp, ln, rp, rn):
@@ -22,6 +24,14 @@ class Priority:
     def step(cls, prev):
         return cls(prev.lp + 1, False, prev.rp + 1, False)
 
+    def highest_left(self):
+        self.lp = 0
+        return self
+
+    def highest_right(self):
+        self.rp = 0
+        return self
+
     def nullify_left(self):
         self.ln = True
         return self
@@ -32,16 +42,19 @@ class Priority:
 
     def __lt__(self, other):
         self_p  = 1000 if self.rn  else self.rp
-        other_p = 1000 if other.ln else self.lp
+        other_p = 1000 if other.ln else other.lp
         # If self has a larger numerical priority, then it is of lower priority
         return self_p > other_p
 
     def __gt__(self, other):
         self_p  = 1000 if self.rn  else self.rp
-        other_p = 1000 if other.ln else self.lp
+        other_p = 1000 if other.ln else other.lp
         # If self has a smaller numerical priority, then it is of higher priority
         # If both have the same priority, the first takes precedence (self)
         return self_p <= other_p
+
+    def __str__(self):
+        return "{:<5} : {:<5}".format("NULL" if self.ln else self.lp, "NULL" if self.rn else self.rp)
 
 class Label:
     pass
@@ -71,7 +84,7 @@ class StructureOffsetLabel(TokenLabel):
 
 # Point Access - like `&a`
 class PointAccessLabel(TokenLabel):
-    priority = Priority.step(StructureOffsetLabel.priority).nullify_left()
+    priority = Priority.step(StructureOffsetLabel.priority).highest_left()
 
 # Operators - like `2 + 2`
 class OperatorLabel(TokenLabel):
@@ -79,7 +92,7 @@ class OperatorLabel(TokenLabel):
 
 # Procedures - like `@output`
 class ProcedureLabel(TokenLabel):
-    priority = Priority.step(OperatorLabel.priority).nullify_left()
+    priority = Priority.step(OperatorLabel.priority).highest_left().nullify_right()
 
 # Assignment - like `x ! 2`
 class AssignmentLabel(TokenLabel):
@@ -114,11 +127,22 @@ class Parent:
         for p in self.parents:
             yield p
 
+class TrackingList(list):
+    def __init__(self, parent, lst):
+        self.parent = parent
+        super().__init__(lst)
+
+    def append(self, item):
+        if item.ident == self.parent.ident:
+            raise IndexError
+        super().append(item)
+
 class Node:
     def __init__(self, parent, children):
         self.parent    = parent
-        self.children  = children
+        self.children  = TrackingList(self, children)
         self.label     = None
+        self.ident     = names.get_first_name() + str(random.randint(0,100))
 
     def set_label(self, label):
         self.label = label
@@ -160,8 +184,18 @@ class Node:
         return node
 
     def traverse(self, lvl):
-        t_list = [(lvl * "    ") + "-> {}".format(str(self.label))]
+        t_list = [(lvl * "    ") + "-> {}: [{} : {}]"
+                                   .format(self.ident,
+                                           str(self.label.token.value)
+                                           if hasattr(self.label, "token") and self.label.token.value is not "" else
+                                           type(self.label).__name__,
+                                           str(self.label.token.token_type.name)
+                                           if hasattr(self.label, "token") else
+                                           "")]
         for child in self.children:
+            if type(self.label) is ScopeLabel:
+                if child.parent.get() is None:
+                    continue
             t_list += child.traverse(lvl + 1)
         return t_list
 
@@ -198,7 +232,6 @@ class TokenTape:
             return None
 
     def __iter__(self):
-        print([t.token_type.name for t in self.tokenised_repr])
         while True:
             n_item = self.next_token()
             if n_item is None:
@@ -212,6 +245,7 @@ class Action(Enum):
     JMP_SCOPE = 4
     CLR_SCOPE = 5
     PARSE     = 10
+    EXPECT    = 11
 
 class Procedure:
     def __init__(self):
@@ -220,6 +254,18 @@ class Procedure:
     def action(self, action, **action_args):
         self.actions.append((action, action_args))
         return self
+
+class Scope:
+    def __init__(self, node, inline, expires = -1):
+        self.node   = node
+        self.inline = inline
+        self.expires = expires
+
+    def update_expiry(self):
+        self.expires -= 1
+
+    def is_expired(self):
+        return self.expires == 0
 
 class Parser:
     def __init__(self, unit):
@@ -252,6 +298,9 @@ class Parser:
         elif t is TokenType.RBRACE:
             return Procedure().action(Action.END_SCOPE)
 
+        elif t is TokenType.AT:
+            return Procedure().action(Action.EXPECT, tokens = 1, label = ProcedureLabel(token))
+
         else:
             label = None
 
@@ -279,9 +328,6 @@ class Parser:
             elif t is TokenType.AMPER:
                 label = PointAccessLabel(token)
 
-            elif t is TokenType.AT:
-                label = ProcedureLabel(token)
-
             elif t is TokenType.BANG:
                 label = AssignmentLabel(token)
 
@@ -293,40 +339,64 @@ class Parser:
     def add_node(self, label, previous, scope):
         node = None
         if previous is None:
-            node = Node.undisputed(scope).set_label(label)
+            node = Node.undisputed(scope.node).set_label(label)
         else:
             if previous.label.priority < label.priority:
-                node = Node.disputed([scope, previous]).set_label(label)
+               node = Node.disputed([scope.node, previous]).set_label(label)
             else:
-                node = Node.undisputed(scope).set_label(label)
+                node = Node.undisputed(scope.node).set_label(label)
                 node.add_child(previous)
 
-        print(node.label.token if hasattr(node.label, "token") else " :", node in node.children)
         return node
 
 
 
     def parse(self):
         previous   = None
-        scopes     = [(self.tree.root, False)] # (scope node, inline)
+        scopes     = [Scope(self.tree.root, False)] # (scope node, inline)
         scope_ptr  = 0
         for token in self.tokens:
             node = None
 
-            proc = self.get_parse_action(token)
-            for action in proc.actions:
-                if   action[0] is Action.ADD_SCOPE:
-                    label = action[1]["label"]
-                    node  = self.add_node(label, previous, scopes[scope_ptr][0])
-                    scope = Node.undisputed(node).set_label(ScopeLabel())
+            expired = []
+            for scope in scopes:
+                scope.update_expiry()
+                if scope.is_expired():
+                    expired.append(scope)
 
-                    scopes.append((scope, not isinstance(label, CodeBlockLabel)))
+            proc = self.get_parse_action(token)
+
+            for scope in expired:
+                proc.action(Action.END_SCOPE)
+
+            for action in proc.actions:
+                if   action[0] in (Action.ADD_SCOPE, Action.EXPECT, Action.PARSE):
+                    if scope_ptr != (len(scopes) - 1):
+                        closed_scopes = scopes[scope_ptr + 1:]
+                        for scope in closed_scopes:
+                            if scope.inline:
+                                scope_node = scope.node.parent.get()
+                                self.unit.pipeline_input.log_error("Parser", scope_node.label.token.row_number, scope_node.label.token.col_number,
+                                                                   "Un-closed inline scope.")
+
+                        previous = scopes[scope_ptr + 1].node.parent.get()
+                        del scopes[scope_ptr + 1:]
+
+                if   action[0] in (Action.ADD_SCOPE, Action.EXPECT):
+                    label  = action[1]["label"]
+                    node   = self.add_node(label, previous, scopes[scope_ptr])
+                    s_node = Node.undisputed(node).set_label(ScopeLabel())
+
+                    if action[0] is Action.EXPECT:
+                        scopes.append(Scope(s_node, not isinstance(label, CodeBlockLabel), expires = action[1]["tokens"]))
+                    else:
+                        scopes.append(Scope(s_node, not isinstance(label, CodeBlockLabel)))
+
                     previous = None
                     scope_ptr += 1
 
-
                 elif action[0] is Action.END_SCOPE:
-                    closed_scope = scopes.pop()[0]
+                    closed_scope = scopes.pop().node
                     previous     = closed_scope.parent.get()
                     scope_ptr -= 1
 
@@ -335,24 +405,17 @@ class Parser:
                     scope_ptr += 1
 
                 elif action[0] is Action.CLR_SCOPE:
+                    for scope in scopes:
+                        if not scope.is_expired() and scope.inline:
+                            scope_node = scope.node.parent.get()
+                            self.unit.pipeline_input.log_error("Parser", scope_node.label.token.row_number, scope_node.label.token.col_number,
+                                                               "Line break prior to expiry of scope.")
                     previous = None
                     scope_ptr = 0
 
                 elif action[0] is Action.PARSE:
-                    if scope_ptr != (len(scopes) - 1):
-                        closed_scopes = scopes[scope_ptr + 1:]
-                        for scope in closed_scopes:
-                            if scope[1]:
-                                node = scope[0].parent.get()
-                                self.unit.pipeline_input.log_error("Parser", node.label.token.row_number, node.label.token.col_number,
-                                                                   "Un-closed inline scope.")
-
-                        previous = scopes[scope_ptr + 1][0].parent.get()
-                        del scopes[scope_ptr + 1:]
-
-
                     label = action[1]["label"]
-                    node = self.add_node(label, previous, scopes[scope_ptr][0])
+                    node = self.add_node(label, previous, scopes[scope_ptr])
                     previous = node
 
                 elif action[0] is Action.EOF:
@@ -363,4 +426,6 @@ class Parser:
         self.tree   = SyntaxTree()
         self.tokens = TokenTape(self.unit.tokenised_repr)
         self.parse()
-       # print(self.tree)
+        if self.unit.pipeline_input.verbose:
+            for line in str(self.tree).split("\n"):
+                output.info("Parser", line)

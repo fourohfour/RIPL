@@ -80,7 +80,7 @@ class TokenisedRepresentation():
     def remove_token(self, token):
         self.tokens.remove(token)
 
-    def find_tokeen(self, token):
+    def find_token(self, token):
         return self.tokens.find(token)
 
     def filter_proto_tokens(self):
